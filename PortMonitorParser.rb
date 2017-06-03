@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
+require 'json'
 
 ENDPOINT = "https://port-monitor.com/plans-and-pricing"
 
@@ -42,9 +43,40 @@ class Product
     @annual_price = Integer(value) rescue nil
   end
 
+  def initialize(monitor_count, rate, history, multiple_email_notifications, push_notifications, monthly_price, annual_price)
+    @monitor_count = monitor_count
+  end
+
+end
+
+
+# load page
+page = Nokogiri::HTML(open(ENDPOINT))
+# store html divs whose class is "product"
+html_products = page.css('div.product')
+# iterate over html_products
+if html_products.count > 0
+  products = Array.new
+  # build Product object
+  html_products.each do |html_product|
+    monitor_count = html_product.css("h2").text
+    rate = html_product.css('dl.thin/dd')[0].text.scan(/\d+/)
+    history = html_product.css('dl.thin/dd')[1].text.scan(/\d+/)
+    multiple_email_notifications = html_product.css('dl.thin/dd')[2].text
+    push_notifications = html_product.css('dl.thin/dd')[3].text
+    monthly_price = html_product.css('p')[0].text.scan(/\d+\.\d+/)
+    annual_price = html_product.css('p')[1].text.scan(/\d+\.\d+/)
+
+    product = Product.new(monitor_count, rate, history, multiple_email_notifications, push_notifications, monthly_price, annual_price)
+
+    # add product to Products array
+    products.push(product)
+  end
+  puts products.to_json
+
 end
 
 
 
-page = Nokogiri::HTML(open(ENDPOINT))
-puts page.class   # => Nokogiri::HTML::Document
+
+#puts page.css('div.product')   # => Nokogiri::HTML::Document
